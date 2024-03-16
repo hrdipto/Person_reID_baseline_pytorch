@@ -34,7 +34,7 @@ except ImportError: # will be 3.x series
 parser = argparse.ArgumentParser(description='Test')
 parser.add_argument('--gpu_ids',default='0', type=str,help='gpu_ids: e.g. 0  0,1,2  0,2')
 parser.add_argument('--which_epoch',default='last', type=str, help='0,1,2,3...or last')
-parser.add_argument('--test_dir',default='../Market/pytorch',type=str, help='./test_data')
+parser.add_argument('--test_dir',default='/content/Person_reID_baseline_pytorch//Market/pytorch',type=str, help='./test_data')
 parser.add_argument('--name', default='ft_ResNet50', type=str, help='save model path')
 parser.add_argument('--batchsize', default=256, type=int, help='batchsize')
 parser.add_argument('--linear_num', default=512, type=int, help='feature dimension: 512 or default or 0 (linear=False)')
@@ -50,13 +50,13 @@ parser.add_argument('--ms',default='1', type=str,help='multiple_scale: e.g. 1 1,
 opt = parser.parse_args()
 ###load config###
 # load the training config
-config_path = os.path.join('./model',opt.name,'opts.yaml')
+config_path = os.path.join('/content/Person_reID_baseline_pytorch/','opts.yaml')
 with open(config_path, 'r') as stream:
         config = yaml.load(stream, Loader=yaml.FullLoader) # for the new pyyaml via 'conda install pyyaml'
 opt.fp16 = config['fp16'] 
 opt.PCB = config['PCB']
 opt.use_dense = config['use_dense']
-opt.use_NAS = config['use_NAS']
+# opt.use_NAS = config['use_NAS']
 opt.stride = config['stride']
 if 'use_swin' in config:
     opt.use_swin = config['use_swin']
@@ -109,10 +109,7 @@ if len(gpu_ids)>0:
 # We will use torchvision and torch.utils.data packages for loading the
 # data.
 #
-if opt.use_swin:
-    h, w = 224, 224
-else:
-    h, w = 256, 128
+h, w = 256, 128
 
 data_transforms = transforms.Compose([
         transforms.Resize((h, w), interpolation=3),
@@ -144,11 +141,11 @@ data_dir = test_dir
 if opt.multi:
     image_datasets = {x: datasets.ImageFolder( os.path.join(data_dir,x) ,data_transforms) for x in ['gallery','query','multi-query']}
     dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=opt.batchsize,
-                                             shuffle=False, num_workers=16) for x in ['gallery','query','multi-query']}
+                                             shuffle=False, num_workers=2) for x in ['gallery','query','multi-query']}
 else:
     image_datasets = {x: datasets.ImageFolder( os.path.join(data_dir,x) ,data_transforms) for x in ['gallery','query']}
     dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=opt.batchsize,
-                                             shuffle=False, num_workers=16) for x in ['gallery','query']}
+                                             shuffle=False, num_workers=2) for x in ['gallery','query']}
 class_names = image_datasets['query'].classes
 use_gpu = torch.cuda.is_available()
 
@@ -156,7 +153,7 @@ use_gpu = torch.cuda.is_available()
 # Load model
 #---------------------------
 def load_network(network):
-    save_path = os.path.join('./model',name,'net_%s.pth'%opt.which_epoch)
+    save_path = os.path.join('/content/Person_reID_baseline_pytorch/model',name,'net_%s.pth'%opt.which_epoch)
     try:
         network.load_state_dict(torch.load(save_path))
     except: 
@@ -267,22 +264,6 @@ if opt.multi:
 ######################################################################
 # Load Collected data Trained model
 print('-------test-----------')
-if opt.use_dense:
-    model_structure = ft_net_dense(opt.nclasses, stride = opt.stride, linear_num=opt.linear_num)
-elif opt.use_NAS:
-    model_structure = ft_net_NAS(opt.nclasses, linear_num=opt.linear_num)
-elif opt.use_swin:
-    model_structure = ft_net_swin(opt.nclasses, linear_num=opt.linear_num)
-elif opt.use_swinv2:
-    model_structure = ft_net_swinv2(opt.nclasses, (h,w),  linear_num=opt.linear_num)
-elif opt.use_convnext:
-    model_structure = ft_net_convnext(opt.nclasses, linear_num=opt.linear_num)
-elif opt.use_efficient:
-    model_structure = ft_net_efficient(opt.nclasses, linear_num=opt.linear_num)
-elif opt.use_hr:
-    model_structure = ft_net_hr(opt.nclasses, linear_num=opt.linear_num)
-else:
-    model_structure = ft_net(opt.nclasses, stride = opt.stride, ibn = opt.ibn, linear_num=opt.linear_num)
 
 if opt.PCB:
     model_structure = PCB(opt.nclasses)
@@ -338,8 +319,8 @@ result = {'gallery_f':gallery_feature.numpy(),'gallery_label':gallery_label,'gal
 scipy.io.savemat('pytorch_result.mat',result)
 
 print(opt.name)
-result = './model/%s/result.txt'%opt.name
-os.system('python evaluate_gpu.py | tee -a %s'%result)
+result = '/content/Person_reID_baseline_pytorch/model/%s/result.txt'%opt.name
+os.system('python /content/Person_reID_baseline_pytorch/evaluate_gpu.py | tee -a %s'%result)
 
 if opt.multi:
     result = {'mquery_f':mquery_feature.numpy(),'mquery_label':mquery_label,'mquery_cam':mquery_cam}

@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 # Evaluate
 parser = argparse.ArgumentParser(description='Demo')
 parser.add_argument('--query_index', default=777, type=int, help='test_image_index')
-parser.add_argument('--test_dir',default='../Market/pytorch',type=str, help='./test_data')
+parser.add_argument('--test_dir',default='/content/Person_reID_baseline_pytorch/Market/pytorch',type=str, help='./test_data')
 opts = parser.parse_args()
 
 data_dir = opts.test_dir
@@ -23,8 +23,20 @@ def imshow(path, title=None):
     """Imshow for Tensor."""
     im = plt.imread(path)
     plt.imshow(im)
+    fileName = "/content/vlm_image/image_" + str(i) + ".png"
+    plt.savefig(fileName)
+
     if title is not None:
         plt.title(title)
+    plt.pause(0.001)  # pause a bit so that plots are updated
+
+def imsave(path, i):
+    """Imshow for Tensor."""
+    im = plt.imread(path)
+    plt.imshow(im)
+    fileName = "/content/vlm_image/image_" + str(i) + ".png"
+    plt.savefig(fileName)
+
     plt.pause(0.001)  # pause a bit so that plots are updated
 
 ######################################################################
@@ -86,25 +98,22 @@ print(query_path)
 print('Top 10 images are as follow:')
 try: # Visualize Ranking Result 
     # Graphical User Interface is needed
-    fig = plt.figure(figsize=(16,4))
-    ax = plt.subplot(1,11,1)
-    ax.axis('off')
-    imshow(query_path,'query')
+    imshow(query_path, 'query')
     for i in range(10):
-        ax = plt.subplot(1,11,i+2)
-        ax.axis('off')
+        ax = plt.axis('off')
         img_path, _ = image_datasets['gallery'].imgs[index[i]]
         label = gallery_label[index[i]]
         imshow(img_path)
-        if label == query_label:
-            ax.set_title('%d'%(i+1), color='green')
-        else:
-            ax.set_title('%d'%(i+1), color='red')
+        imsave(img_path, i)
+        # if label == query_label:
+        #     ax.set_title('%d'%(i+1), color='green')
+        # else:
+        #     ax.set_title('%d'%(i+1), color='red')
         print(img_path)
+
+        
 except RuntimeError:
     for i in range(10):
         img_path = image_datasets.imgs[index[i]]
         print(img_path[0])
     print('If you want to see the visualization of the ranking result, graphical user interface is needed.')
-
-fig.savefig("show.png")
